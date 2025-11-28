@@ -3,20 +3,26 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('docker-hub')
-        IMAGE_NAME = "yourdockerhubusername/yourrepository:latest"
-        EC2_HOST = "ubuntu@EC2_PUBLIC_IP"
-        SSH_KEY = credentials('ec2-ssh-key')
+        IMAGE_NAME = "ramal1204/ci-cd-node-app:${BUILD_NUMBER}"
+        EC2_HOST = "ubuntu@18.191.248.72"   // <-- Replace with your real EC2 IP
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/yourusername/yourrepo.git'
+                    url: 'https://github.com/Blessed120/CI-Pipline.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Secrets Scan (Gitleaks)') {
+            steps {
+                sh 'gitleaks detect --source . --no-banner --redact || true'
+            }
+        }
+
+        stage('Install Dependencies') { 
             steps {
                 sh 'npm install'
             }
@@ -30,7 +36,8 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh "docker build -t ${IMAGE_NAME} ."
+                sh "docker tag ${IMAGE_NAME} ramal1204/ci-cd-node-app:latest"
             }
         }
 
@@ -40,7 +47,8 @@ pipeline {
                     echo $DOCKERHUB_CREDENTIALS_PSW | docker login \
                     --username $DOCKERHUB_CREDENTIALS_USR --password-stdin
                 """
-                sh 'docker push $IMAGE_NAME'
+                sh "docker push ${IMAGE_NAME}"
+                sh "docker push ramal1204/ci-cd-node-app:latest"
             }
         }
 
@@ -48,11 +56,11 @@ pipeline {
             steps {
                 sshagent(['ec2-ssh-key']) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no $EC2_HOST "
-                            docker pull $IMAGE_NAME &&
+                        ssh -o StrictHostKeyChecking=no ${EC2_HOST} "
+                            docker pull ${IMAGE_NAME} &&
                             docker stop app || true &&
                             docker rm app || true &&
-                            docker run -d -p 3000:3000 --name app $IMAGE_NAME
+                            docker run -d -p 3000:3000 --name app ${IMAGE_NAME}
                         "
                     """
                 }
