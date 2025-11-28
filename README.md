@@ -22,3 +22,5 @@ SSH into EC2:
 ```sh
 ssh ubuntu@<EC2-IP>
 docker ps
+
+webhook test
