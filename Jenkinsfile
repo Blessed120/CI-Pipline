@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS = credentials('docker-hub')
         IMAGE_NAME = "ramal1204/ci-cd-node-app:${BUILD_NUMBER}"
-        EC2_HOST = "ubuntu@18.191.248.72"   // <-- Replace with your real EC2 IP
+        EC2_HOST = "ubuntu@18.191.248.72"  
     }
 
     stages {
